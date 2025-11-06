@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -17,6 +18,25 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF501EE6),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EditProfileScreen(),
+                ),
+              );
+              
+              // Refresh if data changed
+              if (result == true) {
+                // Data already refreshed in EditProfileScreen
+              }
+            },
+            tooltip: 'Edit Profil',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

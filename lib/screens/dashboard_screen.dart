@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import 'login_screen.dart';
 import 'tagihan_screen.dart';
 import 'profile_screen.dart';
+import 'wifi_settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -210,6 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
+                      childAspectRatio: 1.2,
                       children: [
                         _buildMenuCard(
                           'Tagihan',
@@ -220,6 +222,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const TagihanScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildMenuCard(
+                          'WiFi',
+                          Icons.wifi,
+                          const Color(0xFF10B981),
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const WiFiSettingsScreen(),
                               ),
                             );
                           },

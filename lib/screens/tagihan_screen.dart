@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/tagihan.dart';
+import 'payment_detail_screen.dart';
 
 class TagihanScreen extends StatefulWidget {
   const TagihanScreen({super.key});
@@ -218,6 +219,40 @@ class _TagihanScreenState extends State<TagihanScreen>
               style: const TextStyle(
                 fontSize: 12,
                 color: Color(0xFF604E97),
+              ),
+            ),
+          ],
+          
+          // Tombol Bayar untuk tagihan belum lunas
+          if (!tagihan.isLunas) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PaymentDetailScreen(tagihan: tagihan),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.payment),
+                label: const Text(
+                  'Bayar Sekarang',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6B4CE6),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
             ),
           ],

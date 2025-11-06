@@ -107,54 +107,67 @@ class ApiService {
   }
   
   // Get WiFi settings
-  Future<Response> getWiFiSettings() async {
+  Future<Map<String, dynamic>> getWiFiSettings(String token) async {
     try {
-      return await _dio.get(ApiConfig.wifi);
+      final response = await _dio.get(
+        ApiConfig.wifi,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data;
     } catch (e) {
       rethrow;
     }
   }
   
   // Change WiFi SSID
-  Future<Response> changeWiFiSSID(String ssid) async {
+  Future<Map<String, dynamic>> changeWiFiSSID(String token, String ssid) async {
     try {
-      return await _dio.post(
+      final response = await _dio.post(
         ApiConfig.wifiChangeSSID,
         data: {'ssid': ssid},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
+      return response.data;
     } catch (e) {
       rethrow;
     }
   }
   
   // Change WiFi Password
-  Future<Response> changeWiFiPassword(String password, String passwordConfirmation) async {
+  Future<Map<String, dynamic>> changeWiFiPassword(String token, String password) async {
     try {
-      return await _dio.post(
+      final response = await _dio.post(
         ApiConfig.wifiChangePassword,
-        data: {
-          'password': password,
-          'password_confirmation': passwordConfirmation,
-        },
+        data: {'password': password},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
+      return response.data;
     } catch (e) {
       rethrow;
     }
   }
   
   // Get WiFi change history
-  Future<Response> getWiFiHistory() async {
+  Future<Map<String, dynamic>> getWiFiHistory(String token) async {
     try {
-      return await _dio.get(ApiConfig.wifiHistory);
+      final response = await _dio.get(
+        ApiConfig.wifiHistory,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data;
     } catch (e) {
       rethrow;
     }
   }
   
   // Reset WiFi to default
-  Future<Response> resetWiFiDefault() async {
+  Future<Map<String, dynamic>> resetWiFiToDefault(String token) async {
     try {
-      return await _dio.post(ApiConfig.wifiResetDefault);
+      final response = await _dio.post(
+        ApiConfig.wifiResetDefault,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data;
     } catch (e) {
       rethrow;
     }
@@ -164,6 +177,41 @@ class ApiService {
   Future<Response> getPaymentMethods() async {
     try {
       return await _dio.get(ApiConfig.paymentMethods);
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  // Update email
+  Future<Map<String, dynamic>> updateEmail(String token, String email) async {
+    try {
+      final response = await _dio.put(
+        '/update-email',
+        data: {'email': email},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  // Update password
+  Future<Map<String, dynamic>> updatePassword(
+    String token,
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      final response = await _dio.put(
+        '/update-password',
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.data;
     } catch (e) {
       rethrow;
     }
