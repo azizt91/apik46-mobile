@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../models/tagihan.dart';
+import '../providers/auth_provider.dart';
 import 'payment_detail_screen.dart';
 
 class TagihanScreen extends StatefulWidget {
@@ -34,6 +36,13 @@ class _TagihanScreenState extends State<TagihanScreen>
   Future<void> _loadTagihan() async {
     setState(() => _isLoading = true);
     try {
+      // Get token and set to API service
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = await authProvider.token;
+      if (token != null) {
+        _apiService.setToken(token);
+      }
+      
       // Load belum lunas
       final responseBL = await _apiService.getTagihan(status: 'BL');
       if (responseBL.data['success'] == true) {

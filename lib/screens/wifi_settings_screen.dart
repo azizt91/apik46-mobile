@@ -13,9 +13,10 @@ class WiFiSettingsScreen extends StatefulWidget {
 
 class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
   final ApiService _apiService = ApiService();
-  bool _isLoading = true;
   Map<String, dynamic>? _wifiData;
   List<dynamic> _history = [];
+  bool _isLoading = true;
+  bool _showPassword = false;
 
   @override
   void initState() {
@@ -34,6 +35,9 @@ class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
         throw Exception('Token tidak ditemukan');
       }
 
+      // Set token to API service
+      _apiService.setToken(token);
+      
       final response = await _apiService.getWiFiSettings(token);
       
       if (response['success']) {
@@ -491,10 +495,10 @@ class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
                               value: _wifiData?['ssid'] ?? 'Belum diatur',
                             ),
                             const SizedBox(height: 12),
-                            _buildSettingItem(
+                            _buildPasswordItem(
                               icon: Icons.lock,
                               label: 'Password',
-                              value: _wifiData?['password'] != null ? '••••••••' : 'Belum diatur',
+                              value: _wifiData?['password'],
                             ),
                             const SizedBox(height: 12),
                             _buildSettingItem(
@@ -669,6 +673,62 @@ class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPasswordItem({
+    required IconData icon,
+    required String label,
+    String? value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFF6B4CE6), size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      value != null 
+                        ? (_showPassword ? value : '••••••••')
+                        : 'Belum diatur',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  if (value != null)
+                    IconButton(
+                      icon: Icon(
+                        _showPassword ? Icons.visibility_off : Icons.visibility,
+                        color: const Color(0xFF6B4CE6),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _showPassword = !_showPassword;
+                        });
+                      },
+                      tooltip: _showPassword ? 'Sembunyikan' : 'Tampilkan',
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
