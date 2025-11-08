@@ -48,7 +48,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+      final token = await authProvider.token;
 
       if (token == null) {
         throw Exception('Token tidak ditemukan');
@@ -112,7 +112,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+      final token = await authProvider.token;
 
       if (token == null) {
         throw Exception('Token tidak ditemukan');

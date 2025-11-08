@@ -28,7 +28,7 @@ class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
     
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+      final token = await authProvider.token;
 
       if (token == null) {
         throw Exception('Token tidak ditemukan');
@@ -57,7 +57,7 @@ class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
   Future<void> _loadHistory() async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+      final token = await authProvider.token;
 
       if (token == null) return;
 
@@ -144,7 +144,7 @@ class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
   Future<void> _changeSSID(String newSSID) async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+      final token = await authProvider.token;
 
       if (token == null) {
         throw Exception('Token tidak ditemukan');
@@ -276,7 +276,7 @@ class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
   Future<void> _changePassword(String newPassword) async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+      final token = await authProvider.token;
 
       if (token == null) {
         throw Exception('Token tidak ditemukan');
@@ -335,7 +335,7 @@ class _WiFiSettingsScreenState extends State<WiFiSettingsScreen> {
   Future<void> _resetToDefault() async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+      final token = await authProvider.token;
 
       if (token == null) {
         throw Exception('Token tidak ditemukan');

@@ -31,7 +31,7 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
     
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
+      final token = await authProvider.token;
 
       if (token == null) {
         throw Exception('Token tidak ditemukan');
