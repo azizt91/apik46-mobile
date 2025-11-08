@@ -35,7 +35,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final user = authProvider.user;
     
     if (user != null) {
-      _emailController.text = user['email'] ?? '';
+      _emailController.text = user.email ?? '';
     }
   }
 

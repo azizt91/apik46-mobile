@@ -17,6 +17,9 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _user != null;
   
+  // Get token
+  Future<String?> get token async => await _authService.getToken();
+  
   // Initialize - Check if user is already logged in
   Future<void> initialize() async {
     _isLoading = true;
@@ -101,6 +104,11 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Get me error: $e');
     }
+  }
+  
+  // Alias for getUserInfo
+  Future<void> getUserInfo() async {
+    await getMe();
   }
   
   // Logout

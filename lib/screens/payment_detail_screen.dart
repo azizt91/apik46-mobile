@@ -212,7 +212,7 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
                           backgroundColor: Colors.orange,
                         );
                       },
-                      icon: const Icon(Icons.whatsapp),
+                      icon: const Icon(Icons.chat),
                       label: const Text(
                         'Hubungi Admin',
                         style: TextStyle(
@@ -389,7 +389,7 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
                   IconButton(
                     onPressed: () {
                       _copyToClipboard(
-                        widget.tagihan.tagihan.toString(),
+                        widget.tagihan.nominal.toString(),
                         'Nominal',
                       );
                     },
