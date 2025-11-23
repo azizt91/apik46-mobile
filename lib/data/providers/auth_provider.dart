@@ -32,7 +32,8 @@ class AuthController {
       // Update state
       stateNotifier.setAuthenticated(token);
     } catch (e) {
-      stateNotifier.setError(e.toString());
+      // Don't set global state to error, just rethrow for UI to handle
+      // stateNotifier.setError(e.toString());
       rethrow;
     }
   }
