@@ -124,9 +124,9 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
             return Transform.scale(
               scale: value,
               child: Container(
-                width: 140,
-                height: 140,
-                padding: const EdgeInsets.all(8),
+                width: 100,
+                height: 100,
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
