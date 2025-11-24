@@ -95,6 +95,12 @@ class _WifiSettingsPageState extends ConsumerState<WifiSettingsPage> {
         title: const Text('Pengaturan WiFi'),
         elevation: 0,
         backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light, // Light icons for dark background
+          statusBarBrightness: Brightness.dark, // For iOS
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () async {

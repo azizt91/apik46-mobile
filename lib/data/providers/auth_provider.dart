@@ -18,24 +18,21 @@ class AuthController {
   AuthController(this._ref, this._authRepository);
 
   Future<void> login({required String email, required String password}) async {
+    // Don't manipulate global state during login - let UI handle loading state
+    // This prevents router from reacting and causing page reloads
+    
+    final data = await _authRepository.login(email, password);
+    final token = data['token'];
+    
+    // Save token
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', token);
+    
+    // Only update state after successful login
     final stateNotifier = _ref.read(authStateProvider.notifier);
-    stateNotifier.setLoading();
-
-    try {
-      final data = await _authRepository.login(email, password);
-      final token = data['token'];
-      
-      // Save token
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
-      
-      // Update state
-      stateNotifier.setAuthenticated(token);
-    } catch (e) {
-      // Don't set global state to error, just rethrow for UI to handle
-      // stateNotifier.setError(e.toString());
-      rethrow;
-    }
+    stateNotifier.setAuthenticated(token);
+    
+    // If login fails, exception will be thrown and caught by UI
   }
 
   Future<void> logout() async {

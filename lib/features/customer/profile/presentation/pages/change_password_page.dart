@@ -71,6 +71,12 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
         title: const Text('Ganti Password'),
         elevation: 0,
         backgroundColor: const Color(0xFF6366F1),
+        foregroundColor: Colors.white,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

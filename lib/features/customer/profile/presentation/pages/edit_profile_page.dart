@@ -90,6 +90,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         title: const Text('Edit Profile'),
         elevation: 0,
         backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
