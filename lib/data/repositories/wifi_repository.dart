@@ -161,4 +161,34 @@ class WiFiRepository {
       throw Exception(e.response?.data['message'] ?? 'Terjadi kesalahan');
     }
   }
+  
+  Future<List<dynamic>> getConnectedDevices() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      
+      if (token == null) {
+        throw Exception('Token tidak ditemukan');
+      }
+
+      final response = await _dio.get(
+        '${ApiConstants.baseUrl}/wifi/connected-devices',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return response.data['data'] ?? [];
+      }
+
+      return [];
+    } catch (e) {
+      // Return empty list on error instead of throwing
+      return [];
+    }
+  }
 }

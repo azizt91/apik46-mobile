@@ -43,16 +43,21 @@ class CustomerDashboardPage extends ConsumerWidget {
                       CircleAvatar(
                         radius: 20,
                         backgroundColor: AppColors.primary.withOpacity(0.1),
-                        child: Text(
-                          (pelanggan['nama'] as String?)?.isNotEmpty == true
-                              ? pelanggan['nama'][0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        backgroundImage: pelanggan['profile_picture'] != null
+                            ? NetworkImage(pelanggan['profile_picture'])
+                            : null,
+                        child: pelanggan['profile_picture'] == null
+                            ? Text(
+                                (pelanggan['nama'] as String?)?.isNotEmpty == true
+                                    ? pelanggan['nama'][0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              )
+                            : null,
                       ),
                       const SizedBox(width: 12),
                       Expanded(

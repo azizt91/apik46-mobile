@@ -88,24 +88,27 @@ class _WifiSettingsPageState extends ConsumerState<WifiSettingsPage> {
   Widget build(BuildContext context) {
     final wifiAsync = ref.watch(wifiSettingsProvider);
     final historyAsync = ref.watch(wifiHistoryProvider);
+    final connectedDevicesAsync = ref.watch(wifiConnectedDevicesProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
       appBar: AppBar(
         title: const Text('Pengaturan WiFi'),
         elevation: 0,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        centerTitle: true,
         systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light, // Light icons for dark background
-          statusBarBrightness: Brightness.dark, // For iOS
+          statusBarIconBrightness: Brightness.dark, // Dark icons for light background
+          statusBarBrightness: Brightness.light, // For iOS
         ),
       ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(wifiSettingsProvider);
           ref.invalidate(wifiHistoryProvider);
+          ref.invalidate(wifiConnectedDevicesProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -124,6 +127,11 @@ class _WifiSettingsPageState extends ConsumerState<WifiSettingsPage> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, stack) => _buildErrorCard(error.toString()),
               ),
+              
+              const SizedBox(height: 16),
+              
+              // Connected Devices
+              _buildConnectedDevicesSection(connectedDevicesAsync),
               
               const SizedBox(height: 24),
               
@@ -255,6 +263,172 @@ class _WifiSettingsPageState extends ConsumerState<WifiSettingsPage> {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConnectedDevicesSection(AsyncValue<List<dynamic>> devicesAsync) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.devices, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Perangkat Terhubung',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 20),
+                onPressed: () {
+                  ref.invalidate(wifiConnectedDevicesProvider);
+                },
+                color: AppColors.primary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          devicesAsync.when(
+            data: (devices) {
+              if (devices.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      children: [
+                        Icon(Icons.wifi_off, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Tidak ada perangkat terhubung',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              return Column(
+                children: [
+                  ...devices.map((device) => _buildDeviceItem(device)).toList(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Total: ${devices.length} perangkat',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              );
+            },
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (error, stack) => Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'Gagal memuat data perangkat',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceItem(Map<String, dynamic> device) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.phone_android, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  device['device_name'] ?? 'Unknown',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildDeviceInfoRow('IP', device['ip_address'] ?? '-'),
+          const SizedBox(height: 4),
+          _buildDeviceInfoRow('MAC', device['mac_address'] ?? '-'),
+          const SizedBox(height: 4),
+          _buildDeviceInfoRow('Type', device['type'] ?? '-'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceInfoRow(String label, String value) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 50,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ),
+        const Text(': ', style: TextStyle(fontSize: 12)),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF1E293B),
+            ),
           ),
         ),
       ],

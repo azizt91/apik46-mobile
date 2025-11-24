@@ -19,6 +19,12 @@ final wifiHistoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asy
   return await repository.getHistory();
 });
 
+// WiFi connected devices provider
+final wifiConnectedDevicesProvider = FutureProvider<List<dynamic>>((ref) async {
+  final repository = ref.watch(wifiRepositoryProvider);
+  return await repository.getConnectedDevices();
+});
+
 // State notifier for WiFi updates
 class WiFiUpdateNotifier extends StateNotifier<AsyncValue<void>> {
   final WiFiRepository _repository;

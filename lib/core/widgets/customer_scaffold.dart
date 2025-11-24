@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:apik_mobile/core/theme/app_colors.dart';
 
 class CustomerScaffold extends StatelessWidget {
   final Widget child;
@@ -18,11 +19,31 @@ class CustomerScaffold extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _getSelectedIndex(currentRoute),
         onDestinationSelected: (index) => _onItemTapped(index, context),
+        indicatorColor: AppColors.primary.withOpacity(0.3),
+        backgroundColor: Colors.white,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        elevation: 8,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.receipt), label: 'Tagihan'),
-          NavigationDestination(icon: Icon(Icons.wifi), label: 'WiFi'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Profil'),
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.receipt_outlined),
+            selectedIcon: Icon(Icons.receipt),
+            label: 'Tagihan',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.wifi_outlined),
+            selectedIcon: Icon(Icons.wifi),
+            label: 'WiFi',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profil',
+          ),
         ],
       ),
     );
