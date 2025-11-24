@@ -19,7 +19,7 @@ class CustomerScaffold extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _getSelectedIndex(currentRoute),
         onDestinationSelected: (index) => _onItemTapped(index, context),
-        indicatorColor: AppColors.primary.withOpacity(0.3),
+        indicatorColor: AppColors.primary.withOpacity(0.75),
         backgroundColor: Colors.white,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         elevation: 8,
