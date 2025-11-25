@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:apik_mobile/data/repositories/profile_repository.dart';
 import 'package:dio/dio.dart';
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   final dio = Dio();
@@ -34,7 +34,7 @@ class ProfileUpdateNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> uploadPhoto(File imageFile) async {
+  Future<void> uploadPhoto(XFile imageFile) async {
     state = const AsyncValue.loading();
     try {
       await _repository.uploadPhoto(imageFile);

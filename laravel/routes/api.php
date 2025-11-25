@@ -85,6 +85,7 @@ use App\Http\Controllers\API\MobileProfileController;
 Route::prefix('mobile')->group(function () {
     // Public routes
     Route::post('login', [MobileAuthController::class, 'login']);
+    Route::get('profile/photo/{filename}', [MobileProfileController::class, 'getPhoto'])->name('api.mobile.profile.photo');
     
     // Protected routes (auth:sanctum)
     Route::middleware('auth:sanctum')->group(function () {
@@ -114,6 +115,7 @@ Route::prefix('mobile')->group(function () {
         Route::prefix('wifi')->group(function () {
             Route::get('/', [MobileWiFiController::class, 'index']);
             Route::get('connected-devices', [MobileWiFiController::class, 'connectedDevices']);
+            Route::get('debug-genieacs', [MobileWiFiController::class, 'debugGenieACS']); // Debug endpoint
             Route::post('change-ssid', [MobileWiFiController::class, 'changeSSID']);
             Route::post('change-password', [MobileWiFiController::class, 'changePassword']);
             Route::get('history', [MobileWiFiController::class, 'history']);

@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:apik_mobile/core/constants/api_constants.dart';
 import 'package:http/http.dart' as http;
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class ProfileRepository {
   final Dio _dio;
@@ -53,7 +53,7 @@ class ProfileRepository {
     }
   }
 
-  Future<String> uploadPhoto(File imageFile) async {
+  Future<String> uploadPhoto(XFile imageFile) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
@@ -62,25 +62,31 @@ class ProfileRepository {
         throw Exception('Token tidak ditemukan');
       }
 
-      final baseUrlWithoutMobile = ApiConstants.baseUrl.replaceAll('/mobile', '');
-      final uri = Uri.parse('$baseUrlWithoutMobile/mobile/profile/photo');
+      final uri = Uri.parse('${ApiConstants.baseUrl}/profile/photo');
 
       var request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
       request.headers['Accept'] = 'application/json';
       
-      request.files.add(await http.MultipartFile.fromPath('photo', imageFile.path));
+      // Read file bytes for cross-platform support (Web & Mobile)
+      final bytes = await imageFile.readAsBytes();
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photo',
+          bytes,
+          filename: imageFile.name,
+        ),
+      );
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final data = response.body;
-        // Parse JSON manually if needed
         return data; // Return photo URL
       }
 
-      throw Exception('Gagal upload foto');
+      throw Exception('Gagal upload foto: ${response.statusCode}');
     } catch (e) {
       throw Exception('Error upload foto: $e');
     }

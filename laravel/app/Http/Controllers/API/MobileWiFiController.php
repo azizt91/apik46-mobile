@@ -6,10 +6,16 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\WiFiSettings;
 use App\Models\WifiChangeHistory;
+use App\Models\GenieAcsSetting;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class MobileWiFiController extends Controller
 {
+    // Path umum TR-069 untuk SSID dan Password
+    const WLAN_PATH_SSID = 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID';
+    const WLAN_PATH_PASS = 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.KeyPassphrase';
+
     /**
      * Get current WiFi settings from GenieACS
      */
@@ -25,7 +31,7 @@ class MobileWiFiController extends Controller
                 'success' => true,
                 'data' => [
                     'ssid' => $wifiInfo['ssid'],
-                    'password' => $wifiInfo['password'],
+                    'password' => $wifiInfo['password'], // Masked or actual depending on logic
                     'security_type' => 'WPA2-PSK',
                     'is_active' => true,
                     'last_changed' => null,
@@ -36,43 +42,15 @@ class MobileWiFiController extends Controller
             ]);
         }
         
-        // Fallback to database if GenieACS fails
-        $wifiSettings = WiFiSettings::where('id_pelanggan', $pelanggan->id_pelanggan)->first();
-        
-        if (!$wifiSettings) {
-            // Auto-create default WiFi settings
-            $defaultSSID = 'APIK-' . $pelanggan->id_pelanggan;
-            $defaultPassword = strtolower($pelanggan->id_pelanggan);
-            
-            $wifiSettings = WiFiSettings::create([
-                'id_pelanggan' => $pelanggan->id_pelanggan,
-                'ssid' => $defaultSSID,
-                'password' => $defaultPassword,
-                'security_type' => 'WPA2-PSK',
-                'is_active' => true,
-            ]);
-            
-            // Log creation
-            WifiChangeHistory::create([
-                'id_pelanggan' => $pelanggan->id_pelanggan,
-                'type' => 'reset',
-                'description' => 'WiFi settings auto-created with default values',
-                'old_value' => null,
-                'new_value' => $defaultSSID,
-                'changed_by' => 'system',
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
-        }
-        
+        // Fallback response if GenieACS fails or device not found
         return response()->json([
             'success' => true,
             'data' => [
-                'ssid' => $wifiSettings->ssid,
-                'password' => $wifiSettings->getAttributeValue('password'),
-                'security_type' => $wifiSettings->security_type,
-                'is_active' => $wifiSettings->is_active,
-                'last_changed' => $wifiSettings->updated_at,
+                'ssid' => 'Tidak tersedia',
+                'password' => '********',
+                'security_type' => 'Unknown',
+                'is_active' => false,
+                'last_changed' => null,
                 'pelanggan_nama' => $pelanggan->nama,
                 'pelanggan_id' => $pelanggan->id_pelanggan,
                 'ip_address' => $pelanggan->ip_address,
@@ -81,102 +59,48 @@ class MobileWiFiController extends Controller
     }
     
     /**
-     * Get WiFi info from GenieACS
+     * Get WiFi info from GenieACS (Robust Implementation)
      */
     private function getWiFiFromGenieACS($pelanggan)
     {
-        try {
-            // Check if GenieACS is enabled using model method
-            if (!\App\Models\GenieAcsSetting::isEnabled()) {
-                return null;
-            }
-            
-            $url = \App\Models\GenieAcsSetting::getValue('genieacs_url');
-            $username = \App\Models\GenieAcsSetting::getValue('genieacs_username');
-            $password = \App\Models\GenieAcsSetting::getValue('genieacs_password');
-
-            if (!$url || !$pelanggan->ip_address) {
-                return null;
-            }
-
-            // Query device by IP address using the reference implementation's query
-            // Checks both ExternalIPAddress and VirtualParameters.pppoeIP
-            $query = json_encode([
-                '$or' => [
-                    ['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress' => $pelanggan->ip_address],
-                    ['VirtualParameters.pppoeIP' => $pelanggan->ip_address]
-                ]
-            ]);
-            
-            $deviceUrl = $url . '/devices?query=' . urlencode($query);
-            
-            $ch = curl_init($deviceUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-            
-            if ($username && $password) {
-                try {
-                    $decryptedPassword = decrypt($password);
-                    curl_setopt($ch, CURLOPT_USERPWD, "$username:$decryptedPassword");
-                } catch (\Exception $e) {
-                    curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-                }
-            }
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode == 200 && $response) {
-                $devices = json_decode($response, true);
-            }
-
-            // Fallback to regex query if strict query fails
-            if (empty($devices)) {
-                $deviceUrl = $url . '/devices?query=' . urlencode('{"InternetGatewayDevice.ManagementServer.ConnectionRequestURL":{"$regex":"' . $pelanggan->ip_address . '"}}');
-                
-                $ch = curl_init($deviceUrl);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-                
-                if ($username && $password) {
-                    try {
-                        $decryptedPassword = decrypt($password);
-                        curl_setopt($ch, CURLOPT_USERPWD, "$username:$decryptedPassword");
-                    } catch (\Exception $e) {
-                        curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-                    }
-                }
-
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-
-                if ($httpCode == 200 && $response) {
-                    $devices = json_decode($response, true);
-                }
-            }
-
-            if (!empty($devices)) {
-                $device = $devices[0];
-                
-                // Try to get SSID and password from common paths
-                $ssid = $device['InternetGatewayDevice']['LANDevice']['1']['WLANConfiguration']['1']['SSID']['_value'] ?? null;
-                $password = $device['InternetGatewayDevice']['LANDevice']['1']['WLANConfiguration']['1']['PreSharedKey']['1']['KeyPassphrase']['_value'] ?? '********';
-                
-                if ($ssid) {
-                    return [
-                        'ssid' => $ssid,
-                        'password' => $password,
-                        'device_id' => $device['_id'] // Return device ID for updates
-                    ];
-                }
-            }
-
-            return null;
-        } catch (\Exception $e) {
+        if (!GenieAcsSetting::isEnabled() || !$pelanggan->ip_address) {
             return null;
         }
+
+        // 1. Cari Device berdasarkan IP (Query yang dioptimalkan)
+        $query = json_encode([
+            '$or' => [
+                ['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress' => $pelanggan->ip_address],
+                ['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress' => $pelanggan->ip_address],
+                ['VirtualParameters.pppoeIP' => $pelanggan->ip_address],
+                ['_ip' => $pelanggan->ip_address]
+            ]
+        ]);
+
+        $devices = $this->callGenieAPI('/devices', 'GET', ['query' => $query]);
+
+        // Fallback jika query strict gagal, coba regex
+        if (empty($devices)) {
+            $regexQuery = json_encode([
+                'InternetGatewayDevice.ManagementServer.ConnectionRequestURL' => ['$regex' => $pelanggan->ip_address]
+            ]);
+            $devices = $this->callGenieAPI('/devices', 'GET', ['query' => $regexQuery]);
+        }
+
+        if (!empty($devices) && isset($devices[0])) {
+            $device = $devices[0];
+            
+            // Helper untuk mengambil value dari nested array dengan aman
+            $ssid = data_get($device, self::WLAN_PATH_SSID . '._value', 'Tidak tersedia');
+            
+            return [
+                'ssid' => $ssid,
+                'password' => '********', // Security: Don't expose real password unless necessary
+                'device_id' => $device['_id']
+            ];
+        }
+
+        return null;
     }
     
     /**
@@ -191,47 +115,38 @@ class MobileWiFiController extends Controller
         $pelanggan = $request->user();
         $newSSID = $request->ssid;
         
-        // Log the attempt
-        $log = WifiChangeHistory::create([
-            'id_pelanggan' => $pelanggan->id_pelanggan,
-            'type' => 'ssid',
-            'description' => 'Changing SSID to ' . $newSSID,
-            'old_value' => null, // Will be updated if successful
-            'new_value' => $newSSID,
-            'changed_by' => 'customer',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'status' => 'processing'
-        ]);
-
-        // Try to update via GenieACS
+        // Get device info first
         $wifiInfo = $this->getWiFiFromGenieACS($pelanggan);
         
-        if ($wifiInfo && isset($wifiInfo['device_id'])) {
-            $deviceId = $wifiInfo['device_id'];
-            $success = $this->updateGenieACSParameter(
-                $deviceId, 
-                'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID', 
-                $newSSID
+        if (!$wifiInfo || !isset($wifiInfo['device_id'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Router tidak ditemukan atau offline.'
+            ], 404);
+        }
+
+        // Log the attempt
+        $log = $this->createLog($pelanggan->id_pelanggan, 'ssid', $wifiInfo['ssid'], $newSSID, $request);
+
+        // Push to GenieACS
+        $success = $this->pushToGenieACS($wifiInfo['device_id'], self::WLAN_PATH_SSID, $newSSID);
+        
+        if ($success) {
+            // Update local database as backup/cache
+            WiFiSettings::updateOrCreate(
+                ['id_pelanggan' => $pelanggan->id_pelanggan],
+                ['ssid' => $newSSID]
             );
             
-            if ($success) {
-                // Update local database as backup/cache
-                WiFiSettings::updateOrCreate(
-                    ['id_pelanggan' => $pelanggan->id_pelanggan],
-                    ['ssid' => $newSSID]
-                );
-                
-                $log->update(['status' => 'success', 'old_value' => $wifiInfo['ssid']]);
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => 'SSID berhasil diubah. Perubahan akan diterapkan dalam 1-2 menit.'
-                ]);
-            }
+            $log->update(['status' => 'success']);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'SSID berhasil diubah. Perubahan akan diterapkan dalam 1-2 menit.'
+            ]);
         }
         
-        $log->update(['status' => 'failed', 'description' => 'Failed to connect to device']);
+        $log->update(['status' => 'failed', 'description' => 'Failed to push to GenieACS']);
         
         return response()->json([
             'success' => false,
@@ -261,276 +176,131 @@ class MobileWiFiController extends Controller
         }
         
         $pelanggan = $request->user();
+        $newPassword = $request->password;
         
-        // Get WiFi settings
-        $wifiSettings = WiFiSettings::where('id_pelanggan', $pelanggan->id_pelanggan)->first();
+        // Get device info first
+        $wifiInfo = $this->getWiFiFromGenieACS($pelanggan);
         
-        if (!$wifiSettings) {
+        if (!$wifiInfo || !isset($wifiInfo['device_id'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pengaturan WiFi belum ada. Silakan setup SSID terlebih dahulu.',
+                'message' => 'Router tidak ditemukan atau offline.'
             ], 404);
         }
         
-        $wifiSettings->password = $request->password;
-        $wifiSettings->save();
+        // Log history
+        $log = $this->createLog($pelanggan->id_pelanggan, 'password', '***', '***', $request);
         
-        // Log history (don't store actual passwords)
-        WifiChangeHistory::create([
-            'id_pelanggan' => $pelanggan->id_pelanggan,
-            'type' => 'password',
-            'old_value' => '***',
-            'new_value' => '***',
+        // Push to GenieACS
+        $success = $this->pushToGenieACS($wifiInfo['device_id'], self::WLAN_PATH_PASS, $newPassword);
+        
+        if ($success) {
+            // Update local database
+            WiFiSettings::updateOrCreate(
+                ['id_pelanggan' => $pelanggan->id_pelanggan],
+                ['password' => $newPassword]
+            );
+
+            $log->update(['status' => 'success']);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Password WiFi berhasil diubah. Perubahan akan diterapkan dalam 1-2 menit.'
+            ]);
+        }
+        
+        $log->update(['status' => 'failed']);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengubah password. Pastikan router terhubung ke internet.'
+        ], 500);
+    }
+    
+    // ==========================================
+    // PRIVATE HELPER METHODS
+    // ==========================================
+
+    /**
+     * Sentralisasi panggilan API GenieACS
+     */
+    private function callGenieAPI($endpoint, $method = 'GET', $params = [])
+    {
+        $url = GenieAcsSetting::getValue('genieacs_url');
+        $username = GenieAcsSetting::getValue('genieacs_username');
+        $password = GenieAcsSetting::getValue('genieacs_password');
+
+        if (!$url) return null;
+
+        $fullUrl = $url . $endpoint;
+        
+        // Jika GET dan ada params, append ke URL
+        if ($method == 'GET' && !empty($params)) {
+            $fullUrl .= '?' . http_build_query($params);
+        }
+
+        $ch = curl_init($fullUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        
+        // Auth Handling
+        if ($username && $password) {
+            try {
+                $decryptedPassword = decrypt($password);
+                curl_setopt($ch, CURLOPT_USERPWD, "$username:$decryptedPassword");
+            } catch (\Exception $e) {
+                curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
+            }
+        }
+
+        if ($method == 'POST') {
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        }
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            return json_decode($response, true);
+        }
+
+        Log::error("GenieACS Mobile API Error [$httpCode]: " . $response);
+        return null;
+    }
+
+    /**
+     * Helper khusus untuk Push Parameter
+     */
+    private function pushToGenieACS($deviceId, $parameter, $value)
+    {
+        $endpoint = "/devices/" . urlencode($deviceId) . "/tasks?timeout=3000&connection_request";
+        
+        $payload = [
+            'name' => 'setParameterValues',
+            'parameterValues' => [
+                ['name' => $parameter, 'value' => $value]
+            ]
+        ];
+
+        $result = $this->callGenieAPI($endpoint, 'POST', $payload);
+        return $result !== null;
+    }
+
+    private function createLog($pelangganId, $type, $old, $new, $request)
+    {
+        return WifiChangeHistory::create([
+            'id_pelanggan' => $pelangganId,
+            'type' => $type,
+            'description' => "Mengubah $type via Mobile App",
+            'old_value' => $old,
+            'new_value' => $new,
             'changed_by' => 'customer',
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
-        ]);
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Password WiFi berhasil diubah',
-            'data' => [
-                'updated_at' => $wifiSettings->updated_at,
-            ]
-        ]);
-    }
-    
-    /**
-     * Get change history
-     */
-    public function history(Request $request)
-    {
-        $pelanggan = $request->user();
-        
-        $history = WifiChangeHistory::where('id_pelanggan', $pelanggan->id_pelanggan)
-            ->orderBy('created_at', 'desc')
-            ->limit(20)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'type' => $item->type,
-                    'description' => $item->description,
-                    'old_value' => $item->type === 'password' ? '***' : $item->old_value,
-                    'new_value' => $item->type === 'password' ? '***' : $item->new_value,
-                    'changed_by' => $item->changed_by,
-                    'changed_at' => $item->created_at,
-                    'ip_address' => $item->ip_address,
-                    'status' => $item->status ?? 'success', // Add status field
-                ];
-            });
-        
-        return response()->json([
-            'success' => true,
-            'data' => $history
-        ]);
-    }
-    
-    /**
-     * Update GenieACS parameter
-     */
-    private function updateGenieACSParameter($deviceId, $parameterName, $value)
-    {
-        try {
-            if (!\App\Models\GenieAcsSetting::isEnabled()) {
-                return false;
-            }
-            
-            $url = \App\Models\GenieAcsSetting::getValue('genieacs_url');
-            $username = \App\Models\GenieAcsSetting::getValue('genieacs_username');
-            $password = \App\Models\GenieAcsSetting::getValue('genieacs_password');
-
-            if (!$url || !$deviceId) {
-                return false;
-            }
-
-            $requestUrl = $url . '/devices/' . urlencode($deviceId) . '/tasks?timeout=3000&connection_request';
-            
-            $postData = json_encode([
-                'name' => 'setParameterValues',
-                'parameterValues' => [
-                    [
-                        'name' => $parameterName,
-                        'value' => $value
-                    ]
-                ]
-            ]);
-            
-            $ch = curl_init($requestUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            
-            if ($username && $password) {
-                try {
-                    $decryptedPassword = decrypt($password);
-                    curl_setopt($ch, CURLOPT_USERPWD, "$username:$decryptedPassword");
-                } catch (\Exception $e) {
-                    curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-                }
-            }
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            return $httpCode == 200 || $httpCode == 202;
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-    
-    /**
-     * Get connected devices from GenieACS
-     */
-    public function connectedDevices(Request $request)
-    {
-        $pelanggan = $request->user();
-        $devices = $this->getConnectedDevicesFromGenieACS($pelanggan);
-        
-        return response()->json([
-            'success' => true,
-            'data' => $devices
-        ]);
-    }
-    
-    /**
-     * Get connected devices from GenieACS
-     */
-    private function getConnectedDevicesFromGenieACS($pelanggan)
-    {
-        try {
-            if (!\App\Models\GenieAcsSetting::isEnabled()) {
-                return [];
-            }
-            
-            $url = \App\Models\GenieAcsSetting::getValue('genieacs_url');
-            $username = \App\Models\GenieAcsSetting::getValue('genieacs_username');
-            $password = \App\Models\GenieAcsSetting::getValue('genieacs_password');
-
-            if (!$url || !$pelanggan->ip_address) {
-                return [];
-            }
-
-            // Query device by IP address
-            $query = json_encode([
-                '$or' => [
-                    ['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress' => $pelanggan->ip_address],
-                    ['VirtualParameters.pppoeIP' => $pelanggan->ip_address]
-                ]
-            ]);
-            
-            $deviceUrl = $url . '/devices?query=' . urlencode($query);
-            
-            $ch = curl_init($deviceUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-            
-            if ($username && $password) {
-                try {
-                    $decryptedPassword = decrypt($password);
-                    curl_setopt($ch, CURLOPT_USERPWD, "$username:$decryptedPassword");
-                } catch (\Exception $e) {
-                    curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-                }
-            }
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            $devices = [];
-            if ($httpCode == 200 && $response) {
-                $devices = json_decode($response, true);
-            }
-
-            // Fallback to regex query if strict query fails
-            if (empty($devices)) {
-                $deviceUrl = $url . '/devices?query=' . urlencode('{"InternetGatewayDevice.ManagementServer.ConnectionRequestURL":{"$regex":"' . $pelanggan->ip_address . '"}}');
-                
-                $ch = curl_init($deviceUrl);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-                
-                if ($username && $password) {
-                    try {
-                        $decryptedPassword = decrypt($password);
-                        curl_setopt($ch, CURLOPT_USERPWD, "$username:$decryptedPassword");
-                    } catch (\Exception $e) {
-                        curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-                    }
-                }
-
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-
-                if ($httpCode == 200 && $response) {
-                    $devices = json_decode($response, true);
-                }
-            }
-
-            if (!empty($devices)) {
-                $device = $devices[0];
-                
-                // Get connected hosts from LANDevice
-                $connectedDevices = [];
-                
-                // Try to get hosts from common paths
-                if (isset($device['InternetGatewayDevice']['LANDevice'])) {
-                    foreach ($device['InternetGatewayDevice']['LANDevice'] as $lanKey => $lanDevice) {
-                        if (isset($lanDevice['Hosts']['Host'])) {
-                            foreach ($lanDevice['Hosts']['Host'] as $hostKey => $host) {
-                                // Check if host is active
-                                $active = $host['Active']['_value'] ?? false;
-                                
-                                if ($active) {
-                                    $connectedDevices[] = [
-                                        'device_name' => $host['HostName']['_value'] ?? 'Unknown',
-                                        'ip_address' => $host['IPAddress']['_value'] ?? '-',
-                                        'mac_address' => $host['MACAddress']['_value'] ?? '-',
-                                        'type' => $host['InterfaceType']['_value'] ?? '-'
-                                    ];
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                return $connectedDevices;
-            }
-
-            return [];
-        } catch (\Exception $e) {
-            return [];
-        }
-    }
-
-    /**
-     * Delete history log
-     */
-    public function deleteHistory(Request $request, $id)
-    {
-        $pelanggan = $request->user();
-        
-        $log = WifiChangeHistory::where('id', $id)
-            ->where('id_pelanggan', $pelanggan->id_pelanggan)
-            ->first();
-            
-        if (!$log) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Riwayat tidak ditemukan'
-            ], 404);
-        }
-        
-        $log->delete();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Riwayat berhasil dihapus'
+            'status' => 'processing'
         ]);
     }
 }

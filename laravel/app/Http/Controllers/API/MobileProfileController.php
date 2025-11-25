@@ -58,6 +58,9 @@ class MobileProfileController extends Controller
     /**
      * Upload and update profile photo
      */
+    /**
+     * Upload and update profile photo
+     */
     public function uploadPhoto(Request $request)
     {
         $pelanggan = $request->user();
@@ -86,7 +89,9 @@ class MobileProfileController extends Controller
             
             // Resize and save image (300x300)
             $image = Image::make($file)->fit(300, 300);
-            $path = 'profile_photos/' . $filename;
+            
+            // Use profile_pictures to match existing folder structure
+            $path = 'profile_pictures/' . $filename;
             
             Storage::disk('public')->put($path, (string) $image->encode('jpg', 85));
 
@@ -95,7 +100,8 @@ class MobileProfileController extends Controller
                 'profile_picture' => $path
             ]);
 
-            $photoUrl = asset('storage/' . $path);
+            // Return URL to the serve endpoint
+            $photoUrl = route('api.mobile.profile.photo', ['filename' => $filename]);
 
             return response()->json([
                 'success' => true,
@@ -110,6 +116,28 @@ class MobileProfileController extends Controller
                 'message' => 'Gagal upload foto: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Serve profile photo directly (bypass symlink)
+     */
+    public function getPhoto($filename)
+    {
+        // Check both possible folders
+        $path1 = 'profile_pictures/' . $filename;
+        $path2 = 'profile_photos/' . $filename;
+        
+        if (Storage::disk('public')->exists($path1)) {
+            $file = Storage::disk('public')->get($path1);
+            $mime = Storage::disk('public')->mimeType($path1);
+        } elseif (Storage::disk('public')->exists($path2)) {
+            $file = Storage::disk('public')->get($path2);
+            $mime = Storage::disk('public')->mimeType($path2);
+        } else {
+            return response()->json(['message' => 'Image not found'], 404);
+        }
+
+        return response($file, 200)->header('Content-Type', $mime);
     }
 
     /**

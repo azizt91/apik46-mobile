@@ -3,29 +3,18 @@ import 'package:apik_mobile/data/repositories/wifi_repository.dart';
 import 'package:dio/dio.dart';
 
 final wifiRepositoryProvider = Provider<WiFiRepository>((ref) {
-  final dio = Dio();
+  final dio = Dio(); 
+  // Pastikan Anda sudah mengatur BaseOptions/Interceptors Dio secara global jika perlu
   return WiFiRepository(dio);
 });
 
-// WiFi settings provider
-final wifiSettingsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+// Provider untuk mengambil data awal (GET)
+final wifiSettingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final repository = ref.watch(wifiRepositoryProvider);
   return await repository.getWiFiSettings();
 });
 
-// WiFi history provider
-final wifiHistoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final repository = ref.watch(wifiRepositoryProvider);
-  return await repository.getHistory();
-});
-
-// WiFi connected devices provider
-final wifiConnectedDevicesProvider = FutureProvider<List<dynamic>>((ref) async {
-  final repository = ref.watch(wifiRepositoryProvider);
-  return await repository.getConnectedDevices();
-});
-
-// State notifier for WiFi updates
+// Notifier untuk aksi Update (POST)
 class WiFiUpdateNotifier extends StateNotifier<AsyncValue<void>> {
   final WiFiRepository _repository;
 
@@ -38,6 +27,7 @@ class WiFiUpdateNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
+      rethrow; // Rethrow agar UI tahu ada error
     }
   }
 
@@ -48,15 +38,6 @@ class WiFiUpdateNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
-    }
-  }
-
-  Future<void> deleteHistory(int id) async {
-    // We don't set loading state here to avoid blocking the UI
-    // The list will be refreshed after deletion
-    try {
-      await _repository.deleteHistory(id);
-    } catch (e) {
       rethrow;
     }
   }

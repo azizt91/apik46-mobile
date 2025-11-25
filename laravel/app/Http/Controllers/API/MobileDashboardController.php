@@ -77,7 +77,7 @@ class MobileDashboardController extends Controller
                     'status' => $pelanggan->status,
                     'ip_address' => $pelanggan->ip_address,
                     'profile_picture' => $pelanggan->profile_picture 
-                        ? asset('storage/' . $pelanggan->profile_picture)
+                        ? route('api.mobile.profile.photo', ['filename' => basename($pelanggan->profile_picture)])
                         : null,
                 ],
                 'paket' => $pelanggan->paket ? [

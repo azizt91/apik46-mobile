@@ -7,7 +7,6 @@ import 'package:apik_mobile/core/theme/app_colors.dart';
 import 'package:apik_mobile/data/providers/customer_provider.dart';
 import 'package:apik_mobile/data/providers/auth_provider.dart';
 import 'package:apik_mobile/data/providers/profile_provider.dart';
-import 'dart:io';
 
 class CustomerProfilePage extends ConsumerWidget {
   const CustomerProfilePage({super.key});
@@ -307,9 +306,6 @@ class CustomerProfilePage extends ConsumerWidget {
 
       if (image == null) return;
 
-      // Upload photo without showing dialog
-      final file = File(image.path);
-      
       // Show snackbar for loading
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -332,7 +328,7 @@ class CustomerProfilePage extends ConsumerWidget {
         ),
       );
 
-      await ref.read(profileUpdateProvider.notifier).uploadPhoto(file);
+      await ref.read(profileUpdateProvider.notifier).uploadPhoto(image);
 
       // Refresh dashboard to show new photo
       ref.invalidate(dashboardProvider);
