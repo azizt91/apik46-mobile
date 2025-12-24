@@ -12,6 +12,7 @@ import 'package:apik_mobile/features/customer/invoices/presentation/pages/custom
 import 'package:apik_mobile/features/customer/payment_info/presentation/pages/payment_info_page.dart';
 import 'package:apik_mobile/features/customer/help/presentation/pages/help_page.dart';
 import 'package:apik_mobile/features/customer/wifi/presentation/pages/wifi_settings_page.dart';
+import 'package:apik_mobile/features/debug/debug_page.dart';
 import 'package:apik_mobile/data/providers/auth_provider.dart';
 import '../widgets/customer_scaffold.dart';
 
@@ -99,6 +100,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/customer/profile/change-password',
         builder: (context, state) => const ChangePasswordPage(),
+      ),
+      // Debug Route
+      GoRoute(
+        path: '/debug',
+        builder: (context, state) => const DebugPage(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

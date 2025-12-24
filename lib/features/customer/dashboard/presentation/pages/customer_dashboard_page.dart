@@ -75,6 +75,11 @@ class CustomerDashboardPage extends ConsumerWidget {
                         ),
                       ),
                       IconButton(
+                        icon: const Icon(Icons.bug_report),
+                        onPressed: () => context.push('/debug'),
+                        color: Colors.orange,
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.logout),
                         onPressed: () => _showLogoutDialog(context, ref),
                         color: Colors.black87,
@@ -141,6 +146,12 @@ class CustomerDashboardPage extends ConsumerWidget {
                   TextButton(
                     onPressed: () => ref.read(authControllerProvider).logout(),
                     child: const Text('Logout'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => context.push('/debug'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.orange),
+                    child: const Text('🐛 Debug Info'),
                   ),
                 ],
               ),
