@@ -51,15 +51,16 @@ class AuthProvider with ChangeNotifier {
   // Register FCM token to backend
   Future<void> _registerFcmToken(String authToken) async {
     try {
-      await _fcmService.registerTokenToBackend(authToken);
+      // Temporarily disabled for debugging
+      // await _fcmService.registerTokenToBackend(authToken);
       
       // Listen for token refresh
-      _fcmService.onTokenRefresh((newToken) async {
-        final token = await _authService.getToken();
-        if (token != null) {
-          await _fcmService.registerTokenToBackend(token);
-        }
-      });
+      // _fcmService.onTokenRefresh((newToken) async {
+      //   final token = await _authService.getToken();
+      //   if (token != null) {
+      //     await _fcmService.registerTokenToBackend(token);
+      //   }
+      // });
     } catch (e) {
       debugPrint('FCM registration error: $e');
     }
