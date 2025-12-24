@@ -11,17 +11,15 @@ import 'package:apik_mobile/services/firebase_notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase with error handling
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    
-    // Initialize Firebase Notification Service
-    await FirebaseNotificationService().initialize();
-  } catch (e) {
-    debugPrint('Firebase initialization error: $e');
-  }
+  // Temporarily disable Firebase for debugging
+  // try {
+  //   await Firebase.initializeApp(
+  //     options: DefaultFirebaseOptions.currentPlatform,
+  //   );
+  //   await FirebaseNotificationService().initialize();
+  // } catch (e) {
+  //   debugPrint('Firebase initialization error: $e');
+  // }
   
   // Set transparent status bar globally
   SystemChrome.setSystemUIOverlayStyle(
