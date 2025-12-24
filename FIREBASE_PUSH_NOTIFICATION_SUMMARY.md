@@ -8,6 +8,25 @@ Implementasi push notification Firebase untuk aplikasi billing ISP. Notifikasi a
 
 ---
 
+## Status Implementasi
+
+### ✅ Selesai
+- Flutter: Firebase dependencies, service, dan konfigurasi
+- Laravel: FCM service, controller, migration, scheduler
+- GitHub Actions: Build APK dengan google-services.json dari secrets
+
+### ⏳ Pending
+- Jalankan migration di server: `/opt/alt/php82/usr/bin/php artisan migrate`
+- Re-enable Firebase di `lib/main.dart` setelah dashboard fix
+- Test push notification flow
+
+### 🔧 Bug Fixes (24 Dec 2024)
+1. **Token key mismatch** - Fixed: `auth_provider.dart` saves with `'token'`, `customer_repository.dart` now reads with `'token'`
+2. **Null safety** - Fixed: Dashboard page now handles null data properly
+3. **Debug logging** - Added: Better error messages in customer_repository.dart
+
+---
+
 ## File yang Diubah/Ditambah
 
 ### Flutter (Mobile App)

@@ -23,10 +23,13 @@ class CustomerDashboardPage extends ConsumerWidget {
         },
         child: dashboardAsync.when(
           data: (data) {
-            final pelanggan = data['pelanggan'];
-            final paket = data['paket'];
-            final summary = data['summary'];
-            final currentBill = data['current_month_bill'];
+            final pelanggan = data['pelanggan'] as Map<String, dynamic>? ?? {};
+            final paket = data['paket'] as Map<String, dynamic>?;
+            final summary = data['summary'] as Map<String, dynamic>? ?? {
+              'unpaid': {'count': 0, 'total': 0},
+              'paid': {'count': 0, 'total': 0},
+            };
+            final currentBill = data['current_month_bill'] as Map<String, dynamic>?;
 
             return CustomScrollView(
               slivers: [
@@ -106,20 +109,41 @@ class CustomerDashboardPage extends ConsumerWidget {
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(
+          loading: () => const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-                const SizedBox(height: 16),
-                Text('Error: $error'),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(dashboardProvider),
-                  child: const Text('Coba Lagi'),
-                ),
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Memuat data...'),
               ],
+            ),
+          ),
+          error: (error, stack) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
+                  const SizedBox(height: 16),
+                  Text(
+                    error.toString().replaceAll('Exception: ', ''),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(dashboardProvider),
+                    child: const Text('Coba Lagi'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => ref.read(authControllerProvider).logout(),
+                    child: const Text('Logout'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -339,6 +363,9 @@ class CustomerDashboardPage extends ConsumerWidget {
   }
 
   Widget _buildRiwayatSection(BuildContext context, Map<String, dynamic> summary, NumberFormat currencyFormat) {
+    final unpaid = summary['unpaid'] as Map<String, dynamic>? ?? {'count': 0, 'total': 0};
+    final paid = summary['paid'] as Map<String, dynamic>? ?? {'count': 0, 'total': 0};
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -385,8 +412,8 @@ class CustomerDashboardPage extends ConsumerWidget {
             children: [
               _buildSummaryItem(
                 'Belum Lunas',
-                summary['unpaid']['count'].toString(),
-                currencyFormat.format(summary['unpaid']['total'] ?? 0),
+                (unpaid['count'] ?? 0).toString(),
+                currencyFormat.format(unpaid['total'] ?? 0),
                 const Color(0xFFEF4444),
                 Icons.warning_amber_rounded,
                 isFirst: true,
@@ -398,8 +425,8 @@ class CustomerDashboardPage extends ConsumerWidget {
               ),
               _buildSummaryItem(
                 'Lunas',
-                summary['paid']['count'].toString(),
-                currencyFormat.format(summary['paid']['total'] ?? 0),
+                (paid['count'] ?? 0).toString(),
+                currencyFormat.format(paid['total'] ?? 0),
                 const Color(0xFF10B981),
                 Icons.check_circle,
                 isLast: true,
