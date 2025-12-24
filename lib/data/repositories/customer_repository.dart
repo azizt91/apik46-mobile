@@ -20,7 +20,7 @@ class CustomerRepository {
 
   Future<Options> _getOptions() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    final token = prefs.getString('token');
     return Options(
       headers: {
         'Authorization': 'Bearer $token',
