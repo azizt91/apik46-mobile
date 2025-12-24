@@ -3,10 +3,12 @@ import 'package:dio/dio.dart';
 import '../models/pelanggan.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/firebase_notification_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
   final AuthService _authService = AuthService();
+  final FirebaseNotificationService _fcmService = FirebaseNotificationService();
   
   Pelanggan? _user;
   bool _isLoading = false;
@@ -34,6 +36,8 @@ class AuthProvider with ChangeNotifier {
           _user = cachedUser;
           // Refresh user data from server
           await getMe();
+          // Register FCM token
+          await _registerFcmToken(token);
         }
       }
     } catch (e) {
@@ -41,6 +45,23 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+  
+  // Register FCM token to backend
+  Future<void> _registerFcmToken(String authToken) async {
+    try {
+      await _fcmService.registerTokenToBackend(authToken);
+      
+      // Listen for token refresh
+      _fcmService.onTokenRefresh((newToken) async {
+        final token = await _authService.getToken();
+        if (token != null) {
+          await _fcmService.registerTokenToBackend(token);
+        }
+      });
+    } catch (e) {
+      debugPrint('FCM registration error: $e');
     }
   }
   
@@ -64,6 +85,9 @@ class AuthProvider with ChangeNotifier {
         
         // Set token for future requests
         _apiService.setToken(token);
+        
+        // Register FCM token after successful login
+        await _registerFcmToken(token);
         
         _isLoading = false;
         notifyListeners();
@@ -117,6 +141,12 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     
     try {
+      // Unregister FCM token before logout
+      final token = await _authService.getToken();
+      if (token != null) {
+        await _fcmService.unregisterToken(token);
+      }
+      
       await _apiService.logout();
     } catch (e) {
       debugPrint('Logout API error: $e');

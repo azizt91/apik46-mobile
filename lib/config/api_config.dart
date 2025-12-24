@@ -21,6 +21,10 @@ class ApiConfig {
   static const String wifiResetDefault = '/wifi/reset-default';
   static const String paymentMethods = '/payment-methods';
   
+  // FCM Endpoints
+  static const String fcmRegister = '/fcm/register';
+  static const String fcmUnregister = '/fcm/unregister';
+  
   // Headers
   static Map<String, String> headers({String? token}) {
     return {
