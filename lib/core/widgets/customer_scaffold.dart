@@ -16,6 +16,13 @@ class CustomerScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: child,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/debug'),
+        backgroundColor: Colors.orange,
+        mini: true,
+        child: const Icon(Icons.bug_report, size: 20),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _getSelectedIndex(currentRoute),
         onDestinationSelected: (index) => _onItemTapped(index, context),

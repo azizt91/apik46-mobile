@@ -17,11 +17,6 @@ class CustomerDashboardPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/debug'),
-        backgroundColor: Colors.orange,
-        child: const Icon(Icons.bug_report),
-      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(dashboardProvider);
