@@ -22,6 +22,7 @@ class FirebaseNotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   
   static const String _fcmTokenKey = 'fcm_token';
+  static const String _pendingNotificationKey = 'pending_notification_route';
 
   // Initialize Firebase Messaging
   Future<void> initialize() async {
@@ -74,6 +75,8 @@ class FirebaseNotificationService {
       initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         print('Notification tapped: ${response.payload}');
+        // Save pending route for navigation
+        _savePendingRoute('/customer/notifications');
       },
     );
     
@@ -120,7 +123,24 @@ class FirebaseNotificationService {
   // Handle notification tap
   void _handleNotificationTap(RemoteMessage message) {
     print('Notification tapped: ${message.data}');
-    // Navigate to specific screen based on notification data
+    // Save pending route for navigation to notifications page
+    _savePendingRoute('/customer/notifications');
+  }
+
+  // Save pending route for navigation after app is ready
+  Future<void> _savePendingRoute(String route) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pendingNotificationKey, route);
+  }
+
+  // Get and clear pending route
+  static Future<String?> getPendingRoute() async {
+    final prefs = await SharedPreferences.getInstance();
+    final route = prefs.getString(_pendingNotificationKey);
+    if (route != null) {
+      await prefs.remove(_pendingNotificationKey);
+    }
+    return route;
   }
 
   // Get FCM Token

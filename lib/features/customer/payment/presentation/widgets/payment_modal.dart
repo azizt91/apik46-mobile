@@ -5,6 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:apik_mobile/data/providers/bank_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// Helper function to safely parse number from dynamic value
+num _parseNum(dynamic value) {
+  if (value == null) return 0;
+  if (value is num) return value;
+  if (value is String) return num.tryParse(value) ?? 0;
+  return 0;
+}
+
 class PaymentModal extends ConsumerWidget {
   final Map<String, dynamic> bill;
   
@@ -74,7 +82,7 @@ class PaymentModal extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  currencyFormat.format(bill['tagihan'] ?? 0),
+                  currencyFormat.format(_parseNum(bill['tagihan'])),
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -248,7 +256,7 @@ class PaymentModal extends ConsumerWidget {
   Future<void> _sendWhatsAppConfirmation(BuildContext context) async {
     final phoneNumber = '6285169968884'; // +62 851-6996-8884
     final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    final amount = currencyFormat.format(bill['tagihan'] ?? 0);
+    final amount = currencyFormat.format(_parseNum(bill['tagihan']));
     final period = bill['bulan_tahun'] ?? 'November 2025';
     
     final message = 'Halo, saya ingin konfirmasi pembayaran tagihan internet untuk periode $period sebesar $amount';
