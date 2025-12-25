@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:apik_mobile/core/theme/app_colors.dart';
 import 'package:apik_mobile/data/providers/customer_provider.dart';
 import 'package:apik_mobile/data/providers/auth_provider.dart';
+import 'package:apik_mobile/data/providers/notification_provider.dart';
 import 'package:apik_mobile/features/customer/payment/presentation/widgets/payment_modal.dart';
 
 // Helper function to safely parse number from dynamic value
@@ -82,11 +83,7 @@ class CustomerDashboardPage extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.bug_report),
-                        onPressed: () => context.push('/debug'),
-                        color: Colors.orange,
-                      ),
+                      _NotificationIconButton(),
                       IconButton(
                         icon: const Icon(Icons.logout),
                         onPressed: () => _showLogoutDialog(context, ref),
@@ -513,6 +510,56 @@ class CustomerDashboardPage extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Notification Icon with Badge
+class _NotificationIconButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCountAsync = ref.watch(unreadNotificationCountProvider);
+
+    return IconButton(
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.notifications_outlined),
+          unreadCountAsync.when(
+            data: (count) {
+              if (count == 0) return const SizedBox.shrink();
+              return Positioned(
+                right: -6,
+                top: -6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Text(
+                    count > 99 ? '99+' : count.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+      onPressed: () => context.push('/customer/notifications'),
+      color: Colors.black87,
     );
   }
 }

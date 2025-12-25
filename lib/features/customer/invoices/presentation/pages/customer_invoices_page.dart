@@ -4,6 +4,21 @@ import 'package:intl/intl.dart';
 import 'package:apik_mobile/core/theme/app_colors.dart';
 import 'package:apik_mobile/data/providers/customer_provider.dart';
 
+// Helper function to safely parse number from dynamic value
+num _parseNum(dynamic value) {
+  if (value == null) return 0;
+  if (value is num) return value;
+  if (value is String) return num.tryParse(value) ?? 0;
+  return 0;
+}
+
+int _parseInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
 class CustomerInvoicesPage extends ConsumerStatefulWidget {
   final int initialTabIndex;
   final String? highlightInvoiceId;
@@ -148,7 +163,7 @@ class _InvoiceList extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${_getMonthName(item['bulan'] ?? 1)} ${item['tahun'] ?? ''}',
+                                    '${_getMonthName(_parseInt(item['bulan']))} ${item['tahun'] ?? ''}',
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -174,7 +189,7 @@ class _InvoiceList extends ConsumerWidget {
                                 ],
                               ),
                               Text(
-                                currencyFormat.format(item['tagihan'] ?? 0),
+                                currencyFormat.format(_parseNum(item['tagihan'])),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
