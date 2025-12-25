@@ -7,6 +7,14 @@ import 'package:apik_mobile/data/providers/customer_provider.dart';
 import 'package:apik_mobile/data/providers/auth_provider.dart';
 import 'package:apik_mobile/features/customer/payment/presentation/widgets/payment_modal.dart';
 
+// Helper function to safely parse number from dynamic value
+num _parseNum(dynamic value) {
+  if (value == null) return 0;
+  if (value is num) return value;
+  if (value is String) return num.tryParse(value) ?? 0;
+  return 0;
+}
+
 class CustomerDashboardPage extends ConsumerWidget {
   const CustomerDashboardPage({super.key});
 
@@ -195,7 +203,7 @@ class CustomerDashboardPage extends ConsumerWidget {
     final statusColor = isPaid ? const Color(0xFF10B981) : const Color(0xFFEF4444);
     final statusBgColor = isPaid ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2);
     final statusText = isPaid ? 'Sudah Dibayar' : 'Belum Dibayar';
-    final amount = bill?['tagihan'] ?? 0;
+    final amount = _parseNum(bill?['tagihan']);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -362,7 +370,7 @@ class CustomerDashboardPage extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${currencyFormat.format(paket['harga'] ?? 0)} / bulan',
+            '${currencyFormat.format(_parseNum(paket['harga']))} / bulan',
             style: const TextStyle(
               fontSize: 14,
               color: Color(0xFF64748B),
@@ -424,7 +432,7 @@ class CustomerDashboardPage extends ConsumerWidget {
               _buildSummaryItem(
                 'Belum Lunas',
                 (unpaid['count'] ?? 0).toString(),
-                currencyFormat.format(unpaid['total'] ?? 0),
+                currencyFormat.format(_parseNum(unpaid['total'])),
                 const Color(0xFFEF4444),
                 Icons.warning_amber_rounded,
                 isFirst: true,
@@ -437,7 +445,7 @@ class CustomerDashboardPage extends ConsumerWidget {
               _buildSummaryItem(
                 'Lunas',
                 (paid['count'] ?? 0).toString(),
-                currencyFormat.format(paid['total'] ?? 0),
+                currencyFormat.format(_parseNum(paid['total'])),
                 const Color(0xFF10B981),
                 Icons.check_circle,
                 isLast: true,
