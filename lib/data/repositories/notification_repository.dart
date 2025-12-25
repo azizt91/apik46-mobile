@@ -94,4 +94,19 @@ class NotificationRepository {
       return false;
     }
   }
+
+  Future<bool> deleteAll() async {
+    try {
+      final options = await _getOptions();
+      final response = await _dio.delete(
+        ApiConstants.notificationsDeleteAll,
+        options: options,
+      );
+
+      return response.statusCode == 200 && response.data['success'] == true;
+    } catch (e) {
+      debugPrint('NotificationRepository: Error deleting all: $e');
+      return false;
+    }
+  }
 }

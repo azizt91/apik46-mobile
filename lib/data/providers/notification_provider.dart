@@ -45,6 +45,17 @@ class NotificationController {
     return result;
   }
 
+  Future<bool> deleteAll() async {
+    final repository = _ref.read(notificationRepositoryProvider);
+    final result = await repository.deleteAll();
+    if (result) {
+      // Refresh both providers
+      _ref.invalidate(unreadNotificationCountProvider);
+      _ref.invalidate(notificationListProvider);
+    }
+    return result;
+  }
+
   void refresh() {
     _ref.invalidate(unreadNotificationCountProvider);
     _ref.invalidate(notificationListProvider);

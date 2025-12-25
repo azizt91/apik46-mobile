@@ -15,17 +15,67 @@ class NotificationPage extends ConsumerWidget {
         title: const Text('Notifikasi'),
         centerTitle: true,
         actions: [
-          TextButton(
-            onPressed: () async {
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) async {
               final controller = ref.read(notificationControllerProvider);
-              await controller.markAllAsRead();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Semua notifikasi ditandai sudah dibaca')),
+              if (value == 'read_all') {
+                await controller.markAllAsRead();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Semua notifikasi ditandai sudah dibaca')),
+                  );
+                }
+              } else if (value == 'delete_all') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Hapus Semua'),
+                    content: const Text('Yakin ingin menghapus semua notifikasi?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Batal'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
                 );
+                if (confirm == true) {
+                  await controller.deleteAll();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Semua notifikasi dihapus')),
+                    );
+                  }
+                }
               }
             },
-            child: const Text('Tandai Semua'),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'read_all',
+                child: Row(
+                  children: [
+                    Icon(Icons.done_all, size: 20),
+                    SizedBox(width: 8),
+                    Text('Tandai Semua Dibaca'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete_all',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_sweep, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Hapus Semua', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -40,19 +90,9 @@ class NotificationPage extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.notifications_off_outlined,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
+                    Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey[400]),
                     const SizedBox(height: 16),
-                    Text(
-                      'Belum ada notifikasi',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
+                    Text('Belum ada notifikasi', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
                   ],
                 ),
               );
@@ -101,7 +141,7 @@ class NotificationPage extends ConsumerWidget {
   }
 }
 
-class _NotificationCard extends StatelessWidget {
+class _NotificationCard extends StatefulWidget {
   final Map<String, dynamic> notification;
   final bool isRead;
   final VoidCallback onTap;
@@ -111,6 +151,13 @@ class _NotificationCard extends StatelessWidget {
     required this.isRead,
     required this.onTap,
   });
+
+  @override
+  State<_NotificationCard> createState() => _NotificationCardState();
+}
+
+class _NotificationCardState extends State<_NotificationCard> {
+  bool _expanded = false;
 
   IconData _getIcon(String? type) {
     switch (type) {
@@ -140,20 +187,24 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final type = notification['type'] as String?;
+    final type = widget.notification['type'] as String?;
+    final body = widget.notification['body'] ?? '';
 
     return Material(
-      color: isRead ? Colors.white : AppColors.primary.withOpacity(0.05),
+      color: widget.isRead ? Colors.white : AppColors.primary.withOpacity(0.05),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          widget.onTap();
+          setState(() => _expanded = !_expanded);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isRead ? Colors.grey[200]! : AppColors.primary.withOpacity(0.3),
+              color: widget.isRead ? Colors.grey[200]! : AppColors.primary.withOpacity(0.3),
             ),
           ),
           child: Row(
@@ -166,11 +217,7 @@ class _NotificationCard extends StatelessWidget {
                   color: _getIconColor(type).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _getIcon(type),
-                  color: _getIconColor(type),
-                  size: 22,
-                ),
+                child: Icon(_getIcon(type), color: _getIconColor(type), size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -181,42 +228,51 @@ class _NotificationCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            notification['title'] ?? 'Notifikasi',
+                            widget.notification['title'] ?? 'Notifikasi',
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: isRead ? FontWeight.w500 : FontWeight.bold,
+                              fontWeight: widget.isRead ? FontWeight.w500 : FontWeight.bold,
                               color: Colors.black87,
                             ),
                           ),
                         ),
-                        if (!isRead)
+                        if (!widget.isRead)
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
+                            decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
                           ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      notification['body'] ?? '',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
+                    AnimatedCrossFade(
+                      firstChild: Text(
+                        body,
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      secondChild: Text(
+                        body,
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      ),
+                      crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 200),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      notification['time_ago'] ?? '',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[400],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          widget.notification['time_ago'] ?? '',
+                          style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                        ),
+                        if (body.length > 80)
+                          Text(
+                            _expanded ? 'Tutup' : 'Selengkapnya',
+                            style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w500),
+                          ),
+                      ],
                     ),
                   ],
                 ),
