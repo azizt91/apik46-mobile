@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../repositories/auth_repository.dart';
+import '../../services/firebase_notification_service.dart';
 
 final authControllerProvider = Provider<AuthController>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
@@ -14,6 +16,7 @@ final authStateProvider = StateNotifierProvider<AuthStateNotifier, AsyncValue<St
 class AuthController {
   final Ref _ref;
   final AuthRepository _authRepository;
+  final FirebaseNotificationService _fcmService = FirebaseNotificationService();
 
   AuthController(this._ref, this._authRepository);
 
@@ -32,6 +35,14 @@ class AuthController {
     final stateNotifier = _ref.read(authStateProvider.notifier);
     stateNotifier.setAuthenticated(token);
     
+    // Register FCM token after successful login
+    try {
+      await _fcmService.registerTokenToBackend(token);
+      debugPrint('FCM token registered successfully');
+    } catch (e) {
+      debugPrint('FCM registration error: $e');
+    }
+    
     // If login fails, exception will be thrown and caught by UI
   }
 
@@ -40,6 +51,13 @@ class AuthController {
     final token = stateNotifier.state.value;
     
     if (token != null) {
+      // Unregister FCM token before logout
+      try {
+        await _fcmService.unregisterToken(token);
+      } catch (e) {
+        debugPrint('FCM unregister error: $e');
+      }
+      
       await _authRepository.logout(token);
     }
     
