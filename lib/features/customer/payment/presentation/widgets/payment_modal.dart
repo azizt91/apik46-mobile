@@ -254,12 +254,12 @@ class PaymentModal extends ConsumerWidget {
   }
 
   Future<void> _sendWhatsAppConfirmation(BuildContext context) async {
-    final phoneNumber = '6285169968884'; // +62 851-6996-8884
+    final phoneNumber = '6285642828131'; // 0856-4282-8131
     final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final amount = currencyFormat.format(_parseNum(bill['tagihan']));
-    final period = bill['bulan_tahun'] ?? 'November 2025';
+    final period = bill['bulan_tahun'] ?? '';
     
-    final message = 'Halo, saya ingin konfirmasi pembayaran tagihan internet untuk periode $period sebesar $amount';
+    final message = 'Halo Admin, saya ingin konfirmasi pembayaran tagihan internet periode $period sebesar $amount. Mohon diverifikasi. Terima kasih.';
     final whatsappUrl = 'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}';
 
     try {
